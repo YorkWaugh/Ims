@@ -38,7 +38,7 @@ jobs:
         echo "Replacing android.jar..."
         echo "Target path: $ANDROID_JAR_PATH"
         
-        # Force remove the original file (optional, but safer to ensure clean replacement)
+        # Force remove the original file to ensure clean replacement
         rm -f "$ANDROID_JAR_PATH"
         
         # Download the replacement file using the raw link
@@ -48,10 +48,24 @@ jobs:
         echo "Replacement complete."
         ls -l "$ANDROID_JAR_PATH"
 
+    - name: Decode Keystore
+      env:
+        # Retrieve the base64 encoded keystore from GitHub Secrets
+        ENCODED_STRING: ${{ secrets.APP_KEYSTORE_BASE64 }}
+      run: |
+        # Decode the base64 string back to a file and save it in the app module directory
+        # The build.gradle.kts should be configured to look for 'release.jks'
+        echo "$ENCODED_STRING" | base64 --decode > app/release.jks
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
     - name: Build with Gradle
+      env:
+        # Pass secrets to environment variables so build.gradle.kts can read them
+        APP_KEYSTORE_PASSWORD: ${{ secrets.APP_KEYSTORE_PASSWORD }}
+        APP_KEY_ALIAS: ${{ secrets.APP_KEY_ALIAS }}
+        APP_KEY_PASSWORD: ${{ secrets.APP_KEY_PASSWORD }}
       run: ./gradlew :app:assembleRelease
 
     - name: Upload APK

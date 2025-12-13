@@ -5,8 +5,21 @@ plugins {
 android {
     namespace = "io.github.vvb2060.ims"
     defaultConfig {
-        versionCode = 5
-        versionName = "2.3"
+        versionCode = 6
+        versionName = "2.4"
+    }
+    signingConfigs {
+        create("release") {
+            val keystoreFile = file("release.jks")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = System.getenv("APP_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("APP_KEY_ALIAS")
+                keyPassword = System.getenv("APP_KEY_PASSWORD")
+            } else {
+                storeFile = file("debug.keystore") 
+            }
+        }
     }
     buildTypes {
         release {
@@ -14,7 +27,7 @@ android {
             isShrinkResources = true
             vcsInfo.include = false
             proguardFiles("proguard-rules.pro")
-            signingConfig = signingConfigs["debug"]
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {

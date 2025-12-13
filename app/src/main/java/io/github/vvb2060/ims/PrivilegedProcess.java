@@ -72,6 +72,11 @@ public class PrivilegedProcess extends Instrumentation {
 
         bundle.putBoolean(CarrierConfigManager.KEY_VONR_ENABLED_BOOL, true);
         bundle.putBoolean(CarrierConfigManager.KEY_VONR_SETTING_VISIBILITY_BOOL, true);
+
+        bundle.putBoolean(CarrierConfigManager.KEY_CARRIER_DEFAULT_WFC_IMS_ROAMING_ENABLED_BOOL, true);
+        bundle.putBoolean(CarrierConfigManager.KEY_SUPPORT_SS_OVER_CDMA_BOOL, true);
+        bundle.putBoolean(CarrierConfigManager.KEY_SHOW_4G_FOR_LTE_DATA_ICON_BOOL, true);
+
         bundle.putIntArray(CarrierConfigManager.KEY_CARRIER_NR_AVAILABILITIES_INT_ARRAY,
                 new int[]{CarrierConfigManager.CARRIER_NR_AVAILABILITY_NSA,
                         CarrierConfigManager.CARRIER_NR_AVAILABILITY_SA});

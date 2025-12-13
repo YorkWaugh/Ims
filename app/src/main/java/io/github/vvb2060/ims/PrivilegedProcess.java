@@ -32,8 +32,13 @@ public class PrivilegedProcess extends Instrumentation {
         try {
             var cm = getContext().getSystemService(CarrierConfigManager.class);
             var sm = getContext().getSystemService(SubscriptionManager.class);
-            var values = getConfig();
+            
             for (var subId : sm.getActiveSubscriptionIdList()) {
+                var values = getConfig();
+                var info = sm.getActiveSubscriptionInfo(subId);
+                if (info != null && info.getSimSlotIndex() == 0) {
+                    values.putString(CarrierConfigManager.KEY_SIM_COUNTRY_ISO_OVERRIDE_STRING, "gb");
+                }
                 var bundle = cm.getConfigForSubId(subId, "vvb2060_config_version");
                 if (bundle.getInt("vvb2060_config_version", 0) != BuildConfig.VERSION_CODE) {
                     values.putInt("vvb2060_config_version", BuildConfig.VERSION_CODE);

@@ -5,8 +5,8 @@ plugins {
 android {
     namespace = "io.github.vvb2060.ims"
     defaultConfig {
-        versionCode = 4
-        versionName = "2.2"
+        versionCode = 5
+        versionName = "2.3"
     }
     buildTypes {
         release {

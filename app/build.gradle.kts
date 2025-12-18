@@ -8,6 +8,19 @@ android {
         versionCode = 7
         versionName = "3.0"
     }
+    signingConfigs {
+        create("release") {
+            val keystoreFile = file("release.jks")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = System.getenv("APP_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("APP_KEY_ALIAS")
+                keyPassword = System.getenv("APP_KEY_PASSWORD")
+            } else {
+                storeFile = file("debug.keystore") 
+            }
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = true

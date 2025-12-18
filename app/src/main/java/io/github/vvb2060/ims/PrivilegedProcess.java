@@ -63,27 +63,22 @@ public class PrivilegedProcess extends Instrumentation {
         } catch (Exception e) {
             return false;
         }
-        finish(0, new Bundle());
     }
 
-    private void overrideConfig() throws Exception {
-        var binder = ServiceManager.getService(Context.ACTIVITY_SERVICE);
-        var am = IActivityManager.Stub.asInterface(new ShizukuBinderWrapper(binder));
-        am.startDelegateShellPermissionIdentity(Os.getuid(), null);
-        try {
-            var cm = getContext().getSystemService(CarrierConfigManager.class);
-            var sm = getContext().getSystemService(SubscriptionManager.class);
-            for (var subId : sm.getActiveSubscriptionIdList()) {
-                var values = getConfig();
-                var info = sm.getActiveSubscriptionInfo(subId);
-                if (info != null && info.getSimSlotIndex() == 0) {
-                    values.putString(CarrierConfigManager.KEY_SIM_COUNTRY_ISO_OVERRIDE_STRING, "gb");
-                }
-                var bundle = cm.getConfigForSubId(subId, "vvb2060_config_version");
-                if (bundle.getInt("vvb2060_config_version", 0) != BuildConfig.VERSION_CODE) {
-                    values.putInt("vvb2060_config_version", BuildConfig.VERSION_CODE);
-                    cm.overrideConfig(subId, values);
-                }
+    @SuppressLint("MissingPermission")
+    private static void overrideConfig(Context context, boolean persistent) {
+        var cm = context.getSystemService(CarrierConfigManager.class);
+        var sm = context.getSystemService(SubscriptionManager.class);
+        for (var subId : sm.getActiveSubscriptionIdList()) {
+            var values = getConfig();
+            var info = sm.getActiveSubscriptionInfo(subId);
+            if (info != null && info.getSimSlotIndex() == 0) {
+                values.putString(CarrierConfigManager.KEY_SIM_COUNTRY_ISO_OVERRIDE_STRING, "gb");
+            }
+            var bundle = cm.getConfigForSubId(subId);
+            if (bundle == null || bundle.getInt("vvb2060_config_version", 0) != BuildConfig.VERSION_CODE) {
+                values.putInt("vvb2060_config_version", BuildConfig.VERSION_CODE);
+                cm.overrideConfig(subId, values, persistent);
             }
         }
     }
@@ -110,11 +105,6 @@ public class PrivilegedProcess extends Instrumentation {
 
         bundle.putBoolean(CarrierConfigManager.KEY_VONR_ENABLED_BOOL, true);
         bundle.putBoolean(CarrierConfigManager.KEY_VONR_SETTING_VISIBILITY_BOOL, true);
-
-        bundle.putBoolean(CarrierConfigManager.KEY_CARRIER_DEFAULT_WFC_IMS_ROAMING_ENABLED_BOOL, true);
-        bundle.putBoolean(CarrierConfigManager.KEY_SUPPORT_SS_OVER_CDMA_BOOL, true);
-        bundle.putBoolean(CarrierConfigManager.KEY_SHOW_4G_FOR_LTE_DATA_ICON_BOOL, true);
-
         bundle.putIntArray(CarrierConfigManager.KEY_CARRIER_NR_AVAILABILITIES_INT_ARRAY,
                 new int[] { CarrierConfigManager.CARRIER_NR_AVAILABILITY_NSA,
                         CarrierConfigManager.CARRIER_NR_AVAILABILITY_SA });
@@ -126,6 +116,11 @@ public class PrivilegedProcess extends Instrumentation {
                         -108, /* SIGNAL_STRENGTH_GOOD */
                         -98, /* SIGNAL_STRENGTH_GREAT */
                 });
+
+        bundle.putBoolean(CarrierConfigManager.KEY_CARRIER_DEFAULT_WFC_IMS_ROAMING_ENABLED_BOOL, true);
+        bundle.putBoolean(CarrierConfigManager.KEY_SUPPORT_SS_OVER_CDMA_BOOL, true);
+        bundle.putBoolean(CarrierConfigManager.KEY_SHOW_4G_FOR_LTE_DATA_ICON_BOOL, true);
+        
         return bundle;
     }
 }

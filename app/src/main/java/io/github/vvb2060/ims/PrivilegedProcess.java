@@ -1,26 +1,67 @@
 package io.github.vvb2060.ims;
 
-import android.app.IActivityManager;
+import static rikka.shizuku.ShizukuProvider.METHOD_GET_BINDER;
+
+import android.annotation.NonNull;
+import android.annotation.SuppressLint;
 import android.app.Instrumentation;
 import android.content.Context;
+import android.os.Binder;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Parcel;
 import android.os.PersistableBundle;
-import android.os.ServiceManager;
-import android.system.Os;
+import android.os.RemoteException;
 import android.telephony.CarrierConfigManager;
 import android.telephony.SubscriptionManager;
 import android.util.Log;
 
-import rikka.shizuku.ShizukuBinderWrapper;
-
 public class PrivilegedProcess extends Instrumentation {
+    static final String TAG = "vvb";
 
     @Override
     public void onCreate(Bundle arguments) {
+        var binder = new Binder() {
+            @Override
+            protected boolean onTransact(int code, @NonNull Parcel data, Parcel reply, int flags)
+                    throws RemoteException {
+                if (code == 1) {
+                    try {
+                        var context = getContext();
+                        var persistent = canPersistent(context);
+                        overrideConfig(context, persistent);
+                    } catch (Exception e) {
+                        Log.e(TAG, Log.getStackTraceString(e));
+                    }
+                    var handler = new Handler(Looper.getMainLooper());
+                    handler.postDelayed(() -> finish(0, new Bundle()), 1000);
+                    return true;
+                }
+                return super.onTransact(code, data, reply, flags);
+            }
+        };
+        var extras = new Bundle();
+        extras.putBinder("binder", binder);
+        var cr = getContext().getContentResolver();
+        cr.call(BuildConfig.APPLICATION_ID + ".shizuku", METHOD_GET_BINDER, null, extras);
+    }
+
+    @SuppressLint("PrivateApi")
+    private static boolean canPersistent(Context context) {
         try {
-            overrideConfig();
+            var gms = context.createPackageContext("com.android.phone",
+                    Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
+            var clazz = gms.getClassLoader().loadClass("com.android.phone.CarrierConfigLoader");
+            try {
+                clazz.getDeclaredMethod("isSystemApp");
+            } catch (NoSuchMethodException e) {
+                return true;
+            }
+            clazz.getDeclaredMethod("secureOverrideConfig", PersistableBundle.class, boolean.class);
+            return true;
         } catch (Exception e) {
-            Log.e(PrivilegedProcess.class.getSimpleName(), Log.getStackTraceString(e));
+            return false;
         }
         finish(0, new Bundle());
     }
@@ -32,7 +73,6 @@ public class PrivilegedProcess extends Instrumentation {
         try {
             var cm = getContext().getSystemService(CarrierConfigManager.class);
             var sm = getContext().getSystemService(SubscriptionManager.class);
-            
             for (var subId : sm.getActiveSubscriptionIdList()) {
                 var values = getConfig();
                 var info = sm.getActiveSubscriptionInfo(subId);
@@ -45,8 +85,6 @@ public class PrivilegedProcess extends Instrumentation {
                     cm.overrideConfig(subId, values);
                 }
             }
-        } finally {
-            am.stopDelegateShellPermissionIdentity();
         }
     }
 
@@ -78,15 +116,15 @@ public class PrivilegedProcess extends Instrumentation {
         bundle.putBoolean(CarrierConfigManager.KEY_SHOW_4G_FOR_LTE_DATA_ICON_BOOL, true);
 
         bundle.putIntArray(CarrierConfigManager.KEY_CARRIER_NR_AVAILABILITIES_INT_ARRAY,
-                new int[]{CarrierConfigManager.CARRIER_NR_AVAILABILITY_NSA,
-                        CarrierConfigManager.CARRIER_NR_AVAILABILITY_SA});
+                new int[] { CarrierConfigManager.CARRIER_NR_AVAILABILITY_NSA,
+                        CarrierConfigManager.CARRIER_NR_AVAILABILITY_SA });
         bundle.putIntArray(CarrierConfigManager.KEY_5G_NR_SSRSRP_THRESHOLDS_INT_ARRAY,
                 // Boundaries: [-140 dBm, -44 dBm]
-                new int[]{
+                new int[] {
                         -128, /* SIGNAL_STRENGTH_POOR */
                         -118, /* SIGNAL_STRENGTH_MODERATE */
                         -108, /* SIGNAL_STRENGTH_GOOD */
-                        -98,  /* SIGNAL_STRENGTH_GREAT */
+                        -98, /* SIGNAL_STRENGTH_GREAT */
                 });
         return bundle;
     }

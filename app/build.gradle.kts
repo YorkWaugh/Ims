@@ -16,6 +16,10 @@ android {
                 storePassword = System.getenv("APP_KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("APP_KEY_ALIAS")
                 keyPassword = System.getenv("APP_KEY_PASSWORD")
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = true
             } else {
                 storeFile = file("debug.keystore") 
             }

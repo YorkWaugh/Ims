@@ -6,8 +6,25 @@ android {
     enableKotlin = false
     namespace = "io.github.vvb2060.ims"
     defaultConfig {
-        versionCode = 6
+        versionCode = 8
         versionName = "3.1"
+    }
+    signingConfigs {
+        create("release") {
+            val keystoreFile = file("release.jks")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = System.getenv("APP_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("APP_KEY_ALIAS")
+                keyPassword = System.getenv("APP_KEY_PASSWORD")
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = true
+            } else {
+                storeFile = file("debug.keystore") 
+            }
+        }
     }
     buildTypes {
         release {
@@ -15,7 +32,7 @@ android {
             isShrinkResources = true
             vcsInfo.include = false
             proguardFiles("proguard-rules.pro")
-            signingConfig = signingConfigs["debug"]
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
